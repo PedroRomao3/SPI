@@ -1,0 +1,50 @@
+#include <Arduino.h>
+#include <SPI.h>
+
+// Define pins (default pins for Teensy 4.1 SPI)
+const int chipSelect = 10;  // CS pin
+byte dataToSend[5] = {0x01, 0x02, 0x03, 0x04, 0x05};  // Sample data to send
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) {}  // Wait for serial monitor to open
+  
+  Serial.println("SPI Master Initializing...");
+  
+  // Set CS pin as OUTPUT
+  pinMode(chipSelect, OUTPUT);
+  digitalWrite(chipSelect, HIGH);  // Deselect slave initially
+  
+  // Initialize SPI
+  SPI.begin();
+  
+  // SPI settings
+  // SPI_MODE0: CPOL=0, CPHA=0
+  // MSB_FIRST: Most significant bit first
+  // 1000000: 1MHz clock speed
+  SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
+  
+  Serial.println("SPI Master Ready");
+}
+
+void loop() {
+  Serial.println("Sending SPI data...");
+  
+  // Select the slave device
+  digitalWrite(chipSelect, LOW);
+  
+  // Send data
+  for (int i = 0; i < sizeof(dataToSend); i++) {
+    byte received = SPI.transfer(dataToSend[i]);
+    Serial.print("Sent: 0x");
+    Serial.print(dataToSend[i], HEX);
+    Serial.print(", Received: 0x");
+    Serial.println(received, HEX);
+  }
+  
+  // Deselect the slave device
+  digitalWrite(chipSelect, HIGH);
+  
+  // Wait before next transmission
+  delay(2000);
+}
