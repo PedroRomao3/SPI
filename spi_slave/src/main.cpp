@@ -1,4 +1,4 @@
-/*author: insert link*/
+/*author: https://forum.pjrc.com/index.php?members/tjaekel.89021/*/
 #include <cstdint>
 #include "SPISlave_T4.h"
 uint32_t spiRx[10];

@@ -110,9 +110,11 @@ extern uint32_t spiRx[10];
 extern volatile int spiRxIdx;
 
 SPISlave_T4_FUNC void __attribute__((section(".fustrun"))) SPISlave_T4_OPT::SLAVE_ISR() {
+  
 
   SLAVE_PORT_ADDR;
-
+  Serial.println("ISR");
+  Serial.print("SR: "); Serial.println(SLAVE_SR, HEX);
 #if 0
   if ( _spihandler ) {
     _spihandler();
@@ -125,21 +127,29 @@ SPISlave_T4_FUNC void __attribute__((section(".fustrun"))) SPISlave_T4_OPT::SLAV
   if ( SLAVE_SR & (1UL << 11) ) {
     /* transmit error, clear flag, check cabling */
     SLAVE_SR = (1UL << 11);
+    Serial.println("ERROR");
     transmit_errors++;
   }
   if ( (SLAVE_SR & (1UL << 1)) ) {
     spiRx[spiRxIdx] = SLAVE_RDR;
-    if (spiRxIdx < 9) spiRxIdx++;
+    if (spiRxIdx < 9) {
+      spiRxIdx++;
+    }else {
+      spiRxComplete = 1;
+    }
+    Serial.print("ID: "); Serial.println(spiRxIdx, DEC);
     SLAVE_SR = (1UL << 1);
+    Serial.println("RDR -> TDR");
+    SLAVE_TDR = 0xAA;
   }
 
-  if ( (SLAVE_SR & (1UL << 0)) ) {
-    SLAVE_TDR = 0x34;
-  }
+  // if ( (SLAVE_SR & (1UL << 0)) ) {
+  //   SLAVE_TDR = 0x34;
+  // }
 
-   if ( (SLAVE_SR & (1UL << 9)) ) {
-    spiRxComplete = 1;
-  }
+  //  if ( (SLAVE_SR & (1UL << 9)) ) {
+  //   spiRxComplete = 1;
+  // }
 
   SLAVE_SR = 0x3F00;
   asm volatile ("dsb");
