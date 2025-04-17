@@ -1,7 +1,7 @@
 #include <SPI.h>
 
 // Define the chip select pin
-const int CS_PIN = 10;
+const int CS_PIN = 52;
 
 void setup() {
     // Set CS pin as output and deselect the slave (active low)
