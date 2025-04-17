@@ -14,9 +14,7 @@
 #define SLAVE_PORT_ADDR volatile uint32_t *spiAddr = &(*(volatile uint32_t*)(0x40394000 + (0x4000 * _portnum)))
 #define SLAVE_PINS_ADDR volatile uint32_t *spiAddr = &(*(volatile uint32_t*)(0x401F84EC + (_portnum * 0x10)))
 
-extern volatile int spiRxComplete;
-extern volatile int spiRxIdx;
- 
+
 void lpspi4_slave_isr() {
   _LPSPI4->SLAVE_ISR();
 }
@@ -40,7 +38,7 @@ SPISlave_T4_FUNC SPISlave_T4_OPT::SPISlave_T4() {
     IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 0x3; /* LPSPI4 SDI (MISO) */
     IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 0x3; /* LPSPI4 SDO (MOSI) */
     IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_00 = 0x3; /* LPSPI4 PCS0 (CS) */
-  } 
+  }
 }
 
 
@@ -108,13 +106,13 @@ SPISlave_T4_FUNC uint32_t SPISlave_T4_OPT::popr() {
 
 extern uint32_t spiRx[10];
 extern volatile int spiRxIdx;
+extern volatile int spiRxComplete;
 
 SPISlave_T4_FUNC void __attribute__((section(".fustrun"))) SPISlave_T4_OPT::SLAVE_ISR() {
-  
 
   SLAVE_PORT_ADDR;
   Serial.println("ISR");
-  Serial.print("SR: "); Serial.println(SLAVE_SR, HEX);
+
 #if 0
   if ( _spihandler ) {
     _spihandler();
@@ -127,35 +125,28 @@ SPISlave_T4_FUNC void __attribute__((section(".fustrun"))) SPISlave_T4_OPT::SLAV
   if ( SLAVE_SR & (1UL << 11) ) {
     /* transmit error, clear flag, check cabling */
     SLAVE_SR = (1UL << 11);
-    Serial.println("ERROR");
     transmit_errors++;
   }
   if ( (SLAVE_SR & (1UL << 1)) ) {
     spiRx[spiRxIdx] = SLAVE_RDR;
-    if (spiRxIdx < 9) {
-      spiRxIdx++;
-    }else {
-      spiRxComplete = 1;
-    }
-    Serial.print("ID: "); Serial.println(spiRxIdx, DEC);
+    if (spiRxIdx < 9) spiRxIdx++;
     SLAVE_SR = (1UL << 1);
-    Serial.println("RDR -> TDR");
-    SLAVE_TDR = 0xAA;
   }
 
-  // if ( (SLAVE_SR & (1UL << 0)) ) {
-  //   SLAVE_TDR = 0x34;
-  // }
+  if ( (SLAVE_SR & (1UL << 0)) ) {
+    SLAVE_TDR = 0x34;
+  }
 
-  //  if ( (SLAVE_SR & (1UL << 9)) ) {
-  //   spiRxComplete = 1;
-  // }
+   if ( (SLAVE_SR & (1UL << 9)) ) {
+    spiRxComplete = 1;
+  }
 
   SLAVE_SR = 0x3F00;
   asm volatile ("dsb");
 }
 
-SPISlave_T4_FUNC void SPISlave_T4_OPT::begin() {
+SPISlave_T4_FUNC void SPISlave_T4_OPT::begin()
+{
   SLAVE_PORT_ADDR;
   SLAVE_CR = LPSPI_CR_RST; /* Reset Module */
   SLAVE_CR = 0; /* Disable Module */
