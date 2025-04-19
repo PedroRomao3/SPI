@@ -1,33 +1,25 @@
-/*author: https://forum.pjrc.com/index.php?members/tjaekel.89021/*/
-#include <cstdint>
-#include "SPISlave_T4.h"
-uint32_t spiRx[10];
-volatile int spiRxIdx;
-volatile int spiRxComplete = 0;
+#include "SPI_MSTransfer_T4.h"
+SPI_MSTransfer_T4<&SPI, 0x1234> mySPI;
 
-
-SPISlave_T4<&SPI, SPI_8_BITS> mySPI;
+void myCB(uint16_t *buffer, uint16_t length, AsyncMST info) {
+    for ( int i = 0; i < length; i++ ) {
+        Serial.print(buffer[i], HEX); Serial.print(" ");
+    }
+    Serial.print(" --> Length: "); Serial.print(length);
+    Serial.print(" --> PacketID: "); Serial.println(info.packetID, HEX);
+}
 
 void setup() {
-  Serial.begin(115200);	//baudrate does not matter (is USB VCP anyway)
-  while ( ! Serial) {}
-  Serial.println("START...");
-  mySPI.begin();
+    Serial.begin(115200);
+    mySPI.begin();
+    mySPI.onTransfer(myCB);
 }
 
 void loop() {
-  int i;
-
-  Serial.print("millis: "); Serial.println(millis());
-  if (spiRxComplete) {
-    Serial.println(spiRxIdx);
-    for (i = 0; i < spiRxIdx; i++) {
-      Serial.print(spiRx[i], HEX); Serial.print(" ");
+    mySPI.events();
+    static uint32_t t = millis();
+    if ( millis() - t > 1000 ) {
+        Serial.print("millis: "); Serial.println(millis());
+        t = millis();
     }
-    Serial.println();
-    spiRxComplete = 0;
-    spiRxIdx = 0;
-  }
-  delay(1000);
 }
-
