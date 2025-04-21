@@ -1,4 +1,4 @@
-#include "SPI.h"
+#include <SPI.h>
 
 #include "SPI_MSTransfer_MASTER.h"
 SPI_MSTransfer_MASTER<&SPI, 10, 0x1234> mySPI1234;
