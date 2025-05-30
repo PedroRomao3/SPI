@@ -8,10 +8,9 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "/home/pedroromao/SPI/spi_slave_2/include",
-                "/home/pedroromao/SPI/spi_slave_2/src",
+                "/home/pedroromao/spi_dirs/SPI/spi_slave/include",
+                "/home/pedroromao/spi_dirs/SPI/spi_slave/src",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/SPI",
-                "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexCAN_T4",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/cores/teensy4",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/ADC",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/AccelStepper/src",
@@ -42,6 +41,7 @@
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FastCRC",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FastLED/src",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexCAN",
+                "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexCAN_T4",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexIO_t4/src",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexiTimer2",
                 "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FreqCount",
@@ -115,10 +115,9 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "/home/pedroromao/SPI/spi_slave_2/include",
-                    "/home/pedroromao/SPI/spi_slave_2/src",
+                    "/home/pedroromao/spi_dirs/SPI/spi_slave/include",
+                    "/home/pedroromao/spi_dirs/SPI/spi_slave/src",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/SPI",
-                    "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexCAN_T4",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/cores/teensy4",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/ADC",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/AccelStepper/src",
@@ -149,6 +148,7 @@
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FastCRC",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FastLED/src",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexCAN",
+                    "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexCAN_T4",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexIO_t4/src",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FlexiTimer2",
                     "/home/pedroromao/.platformio/packages/framework-arduinoteensy/libraries/FreqCount",

@@ -56,7 +56,9 @@ SPI_MSTransfer_T4_FUNC void SPI_MSTransfer_T4_OPT::begin() const {
   SLAVE_FCR = 0;
   SLAVE_IER = 0x1; /* RX Interrupt */ // todo yves: this is weird bcs bit 0 zero corresponds to TDIE (Transmit Data Interrupt Enable)
   SLAVE_CFGR0 = 0;
-  SLAVE_CFGR1 = LPSPI_CFGR1_OUTCFG;
+  SLAVE_CFGR1 = (LPSPI_CFGR1_OUTCFG & 0xFCFFFFFF) | (3UL << 24);
+
+
   SLAVE_SR = 0x3F00; /* Clear status register */
   SLAVE_TCR_REFRESH;
   SLAVE_TDR(0x0); /* dummy data, must populate initial TX slot */
@@ -81,22 +83,7 @@ SPI_MSTransfer_T4_FUNC void SPI_MSTransfer_T4_OPT::SPI_MSTransfer_SLAVE_ISR() {
       buffer_pos = 0;
       continue;
     }
-    else if ( data[0] == 0xBEEF ) { /* slave detection */
-      if ( detectOnce && data[buffer_pos] == 0xFFFF ) {
-        detectOnce = false;
-        SLAVE_TDR(slave_ID);
-      }
-      else {
-        SLAVE_TDR(data[buffer_pos]);
-      }
-      buffer_pos++;
-      continue;
-    }
-    else if ( data[1] != slave_ID ) {
-      SLAVE_TDR(data[buffer_pos]);
-      buffer_pos = 0;
-    }
-    else SLAVE_TDR(0xCC00);
+    else SLAVE_TDR(0xBFFB);
 
     if ( data[2] ) len = data[2];
 

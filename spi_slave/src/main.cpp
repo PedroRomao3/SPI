@@ -17,6 +17,7 @@ void myCB(uint16_t* buffer, uint16_t length, AsyncMST info)
 void setup()
 {
     Serial.begin(115200);
+    Serial.print("!!!!! init !!!!!\n");
     mySPI.begin();
     mySPI.onTransfer(myCB);
 }
@@ -25,7 +26,7 @@ void loop()
 {
     mySPI.events();
     static uint32_t t = millis();
-    if (millis() - t > 1000)
+    if (millis() - t > 100)
     {
         Serial.print("millis: ");
         Serial.println(millis());
