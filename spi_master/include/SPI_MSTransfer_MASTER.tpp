@@ -26,171 +26,67 @@ SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::spi_assert() {
 SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::spi_deassert() {
   ::digitalWriteFast(cs_pin, HIGH);
   port->endTransaction();
-  if ( delayed_transfers ) delayMicroseconds(delayed_transfers);
 }
 
 
 SPI_MSTransfer_MASTER_FUNC uint16_t SPI_MSTransfer_MASTER_OPT::spi_transfer16(uint16_t data) {
-  if ( delayed_transfers ) delayMicroseconds(delayed_transfers);
   return port->transfer16(data);
 }
 
-
-SPI_MSTransfer_MASTER_FUNC uint16_t SPI_MSTransfer_MASTER_OPT::transfer16(uint16_t *buffer, uint16_t length, uint16_t packetID) {
-  uint16_t buf[5 + length] = { 0xDEAD, slave_ID, (uint16_t)(length + 1), 0xFAF, packetID };
-  for ( int i = 0; i < length; i++ ) buf[i + 5] = buffer[i];
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-  return buf[0];
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::digitalWrite(uint8_t pin, bool state) {
-  uint16_t buf[5] = { 0xDEAD, slave_ID, 1, 0x1010, ((uint16_t)(pin << 8) | state) };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-}
-
-
-SPI_MSTransfer_MASTER_FUNC int SPI_MSTransfer_MASTER_OPT::digitalRead(uint8_t pin) {
-  uint16_t buf[5] = { 0xDEAD, slave_ID, 1, 0x1011, pin };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-  return buf[2];
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::pinMode(uint8_t pin, uint8_t state) {
-  uint16_t buf[5] = { 0xDEAD, slave_ID, 1, 0x1012, ((uint16_t)(pin << 8) | state) };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-}
-
-
-SPI_MSTransfer_MASTER_FUNC uint16_t SPI_MSTransfer_MASTER_OPT::analogRead(uint8_t pin) {
-  uint16_t buf[5] = { 0xDEAD, slave_ID, 1, 0x1013, pin };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-  return buf[2];
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::analogReadResolution(uint8_t bits) {
-  uint16_t buf[5] = { 0xDEAD, slave_ID, 1, 0x1014, bits };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::analogWrite(uint8_t pin, uint16_t val) {
-  uint16_t buf[6] = { 0xDEAD, slave_ID, 2, 0x1015, pin, val };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::analogWriteResolution(uint8_t bits) {
-  uint16_t buf[5] = { 0xDEAD, slave_ID, 1, 0x1016, bits };
-  process_data(buf, ((sizeof(buf) >> 1) - 4), buf[3]);
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::process_data(uint16_t *buffer, uint16_t length, uint16_t command) {
-  uint16_t checksum = 0, csum_passed = 0;
-  uint16_t r = 0;
-  spi_assert();
-  for ( uint16_t i = 0; i < length + 4; i++ ) {
-    r = spi_transfer16(buffer[i]);
-    Serial.printf("  %04X ", r);
-    if ( i > 3 ) checksum ^= buffer[i];
-  } 
-  r = spi_transfer16(checksum);
-  Serial.printf("  %04X ", r);
-  for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
-    result = spi_transfer16(0xFFFF);
-    Serial.printf("  %04X ", result);
-    if ( result == 0xA5A5 ) { csum_passed = 1; break; }
-    if ( result == 0xE0E0 ) break;
-    if ( result == 0xFFEA ) {
-      checksum = 0xFFEA;
-      csum_passed = 0;
-      buffer[1] = spi_transfer16(0xFFFF);
-      Serial.printf("  %04X ", buffer[1]);
-      for ( int f = 2; f < buffer[1]; f++ ) buffer[f] = spi_transfer16(0xFFFF);
-      for ( uint16_t c = 1; c < buffer[1] - 1; c++ ) checksum ^= buffer[c];
-      if ( checksum == buffer[buffer[1] - 1] ) {
-        csum_passed = 1;
-        break;
-      }
-    }
-  }
-  spi_deassert();
-  buffer[0] = csum_passed;
-}
-
-
-SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::detectSlaves() {
-  uint8_t slave_count = 0;
-  spi_assert();
-  spi_transfer16(0xBEEF);
-  Serial.println("\n  Detected slaves: ");
-  for ( uint16_t i = 0, data = 0, start = 0; i < 30; i++ ) {
-    data = spi_transfer16(0xFFFF);
-    if ( start ) {
-      if ( data == 0xFFFF ) break;
-      Serial.printf("    Slave %d --> ID: 0x%04X\n", ++slave_count, data);
-    }
-    else if ( data == 0xBEEF ) start = 1;
-  }
-  spi_deassert();
-  if ( slave_count ) {
-    Serial.printf("    Mode: %s\n\n", (slave_count > 1) ? "Daisy-Chained" : "Standalone");
-    return;
-  }
-  Serial.printf("    No slaves detected, check connections.\n\n");
-}
-
-
-SPI_MSTransfer_MASTER_FUNC uint32_t SPI_MSTransfer_MASTER_OPT::events() {
+SPI_MSTransfer_MASTER_FUNC uint32_t SPI_MSTransfer_MASTER_OPT::poll_slave() {
   uint16_t r;
   uint16_t queues = 0;
   spi_assert();
   Serial.print("\nSTART: ");
-  r = spi_transfer16(0xDEAD); // header
-  Serial.printf("  %04X ", r);
-  r = spi_transfer16(slave_ID); // slave id
-  Serial.printf("  %04X ", r);
-  r = spi_transfer16(1); // length
-  Serial.printf("  %04X ", r);
-  r = spi_transfer16(0xF1A0); // access queue
-  Serial.printf("  %04X ", r);
-  r = spi_transfer16(0xF1A0); // random data
-  Serial.printf("  %04X ", r);
-  r = spi_transfer16(0xF1A0); // checksum (of random data, so the same)
+  r = spi_transfer16(0xFEED); // Send feed command
   Serial.printf("  %04X ", r);
   Serial.println();
   Serial.print("QUEUE: ");
-  for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
+  for ( uint16_t i = 0, result = 0; i < 10; i++ ) { // Wait for queue status
     result = spi_transfer16(0xFFFF);
     Serial.printf("  %04X ", result);
-    if ( !queues && (result & 0xFF00) == 0xAD00 ) {
+    if ( !queues && (result & 0xFF00) == 0x6900 ) {
       queues = (uint8_t)result;
       break;
     }
   }
-  if ( queues ) {
+  if ( queues ) { // If there are queues, process them
     for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
       Serial.println();
-      if ( result == 0xD632 ) break; /* we also break this loop after a dequeue */
+      if ( result == 0xD632 ) break; // if done break loop
       Serial.print("POLLING DATA: ");
-      result = spi_transfer16(0xCEB6);
+      result = spi_transfer16(0xF00D);
       Serial.printf("  %04X ", result);
-      if ( result == 0xAA55 ) {
-        uint16_t buf[SPI_MST_DATA_BUFFER_MAX] = { 0xAA55, 10 }, pos = 1, checksum = 0xAA55;
+      if ( result == 0xDA7A ) { // Marks the start of a data packet
+        // Packet Structure:
+        // 0: Header (0xDA7A)
+        // 1: Length (number of data words)
+        // 2: Widget ID
+        // 3: Packet ID
+        // 4: Data words (variable length)
+        uint16_t buf[SPI_MST_DATA_BUFFER_MAX] = {};
+        uint16_t pos = 0;
+        uint16_t checksum = 0xDA7A;
+
+        buf[pos] = 0xDA7A;
+        pos++;
+
         Serial.println();
         Serial.print("DATA: ");
+        buf[pos] = spi_transfer16(0xF00D); // Data Length + header, length, widgetid, packetid, checksum
+        checksum ^= buf[pos];
+        Serial.printf("  %04X ", buf[pos]);
+        pos++;
+
         for ( uint16_t i = 0; i < buf[1]; i++ ) {
-          buf[pos] = spi_transfer16(0xCEB6);
+          buf[pos] = spi_transfer16(0xF00D);
           Serial.printf("  %04X ", buf[pos]);
           if ( pos < buf[1] - 1 ) checksum ^= buf[pos];
           pos++;
           if ( pos >= buf[1] ) {
             if ( checksum == buf[buf[1]-1] ) {
-              AsyncMST info; info.slaveID = buf[4]; info.packetID = buf[5];
-              if ( _master_handler != nullptr ) _master_handler(buf + 6, buf[1] - 7, info);
+              AsyncMST info; info.widgetID = buf[2]; info.packetID = buf[3];
+              // if ( _master_handler != nullptr ) _master_handler(buf + 6, buf[1] - 7, info);
               for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
                 result = spi_transfer16(0xCE0A);
                 Serial.printf("  %04X ", result);

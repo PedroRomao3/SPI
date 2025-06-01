@@ -14,14 +14,11 @@ void setup() {
 void loop() {
 
   static uint32_t t = millis();
-  if ( millis() - t > 100 ) {
+  if ( millis() - t > 50 ) {
     Serial.println(millis());
 
-    // uint16_t buf2[1] = { 0xBEEF};
-    // mySPI1234.transfer16(buf2, 1, 0x1000);
-    mySPI1234.events();
+    mySPI1234.poll_slave();
 
-    // mySPI1234.pinMode(5, INPUT);
     t = millis();
   }
 

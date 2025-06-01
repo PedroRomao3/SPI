@@ -34,7 +34,7 @@
 #endif
 
 #define SPI_MST_QUEUE_SLOTS 8
-#define SPI_MST_DATA_BUFFER_MAX 100
+#define SPI_MST_DATA_BUFFER_MAX 200
 
 struct AsyncMST {
   uint16_t packetID = 0;
@@ -46,9 +46,9 @@ using detectPtr = std::function<void(AsyncMST info)>;
 
 typedef void (*_SPI_ptr)();
 
-#define SPI_MSTransfer_T4_CLASS template<SPIClass* port = nullptr, uint32_t slave_ID = -1>
-#define SPI_MSTransfer_T4_FUNC template<SPIClass* port, uint32_t slave_ID>
-#define SPI_MSTransfer_T4_OPT SPI_MSTransfer_T4<port, slave_ID>
+#define SPI_MSTransfer_T4_CLASS template<SPIClass* port = nullptr>
+#define SPI_MSTransfer_T4_FUNC template<SPIClass* port>
+#define SPI_MSTransfer_T4_OPT SPI_MSTransfer_T4<port>
 
 extern SPIClass SPI;
 
@@ -63,22 +63,18 @@ static SPI_MSTransfer_T4_Base* LPSPI4 = nullptr;
 // The size (2nd template argument) must always be a power of 2
 // This example doesn't work bcs it's not a compile-time constant:
 // (uint32_t)pow(2, ceil(log(SPI_MST_QUEUE_SLOTS) / log(2)))
-inline Circular_Buffer<uint16_t, SPI_MST_QUEUE_SLOTS, SPI_MST_DATA_BUFFER_MAX> mstqueue;
 inline Circular_Buffer<uint16_t, SPI_MST_QUEUE_SLOTS, SPI_MST_DATA_BUFFER_MAX> smtqueue;
 
 SPI_MSTransfer_T4_CLASS class SPI_MSTransfer_T4 : public SPI_MSTransfer_T4_Base {
   public:
     SPI_MSTransfer_T4();
     void begin() const;
-    uint16_t transfer16(const uint16_t *buffer, uint16_t length, uint16_t packetID);
-    void onTransfer(const slave_handler_ptr handler) { _slave_handler = handler; }
-    uint32_t events() const;
+    uint16_t transfer16(const uint16_t *buffer, const uint16_t length, uint16_t widgetID, uint16_t packetID);
 
   private:
     volatile uint32_t *spiAddr;
     void SPI_MSTransfer_SLAVE_ISR() override;
     uint32_t nvic_irq = 0;
-    slave_handler_ptr _slave_handler = nullptr;
 };
 
 #include "SPI_MSTransfer_T4.tpp"

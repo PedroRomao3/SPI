@@ -69,139 +69,100 @@ SPI_MSTransfer_T4_FUNC void SPI_MSTransfer_T4_OPT::begin() const
     NVIC_ENABLE_IRQ(nvic_irq);
 }
 
+
+/* Notes for yves:
+SPI_WAIT_STATE is a while loop. it will keep getting data (that we should SLAVE_RDR and SLAVE_TDR) 
+until the master deasserts the PCS line.
+This means that in order to exit SPI_WAIT_STATE, "break" is needed. 
+That's why there's "continue" everywhere, that's why buffer_pos doesn't need to be static. 
+We never never really exit the ISR function.
+ */
 SPI_MSTransfer_T4_FUNC void SPI_MSTransfer_T4_OPT::SPI_MSTransfer_SLAVE_ISR()
 {
-    static uint16_t data[SPI_MST_DATA_BUFFER_MAX];
-    memset(data, 0, sizeof(uint16_t) * SPI_MST_DATA_BUFFER_MAX);
-    uint16_t buffer_pos = 0, len = 0, checksum = 0;
-    bool detectOnce = true;
+    static uint16_t header;
 
+    // Blocking loop; Wait for FEED command
     SPI_WAIT_STATE
-    if (buffer_pos >= SPI_MST_DATA_BUFFER_MAX)
-        buffer_pos = 0;
-    data[buffer_pos] = SLAVE_RDR;
-    if ((data[0] != 0xDEAD) && (data[0] != 0xBEEF))
+    header = SLAVE_RDR;
+    if ((header != 0xFEED))
     {
-        SLAVE_TDR(data[buffer_pos]);
-        buffer_pos = 0;
+        SLAVE_TDR(header);
         continue;
-    }
-    else if (data[0] == 0xBEEF)
-    { /* slave detection */
-        if (detectOnce && data[buffer_pos] == 0xFFFF)
-        {
-            detectOnce = false;
-            SLAVE_TDR(slave_ID);
-        }
-        else
-        {
-            SLAVE_TDR(data[buffer_pos]);
-        }
-        buffer_pos++;
-        continue;
-    }
-    else if (data[1] != slave_ID)
-    {
-        SLAVE_TDR(data[buffer_pos]);
-        buffer_pos = 0;
     }
     else
         SLAVE_TDR(0xCC00);
 
-    if (data[2])
-        len = data[2];
-
-    if (buffer_pos == (len + 4))
-    { /* received payload, check CRC */
-        for (int i = 4; i < len + 4; i++)
-            checksum ^= data[i];
-        if (checksum == data[len + 4])
-        { /* CRC GOOD */
-            break;
-        }
-        else
-        { /* CRC Failed */
-            SPI_WAIT_STATE(void)
-            SLAVE_RDR;
-            SLAVE_TDR(0xE0E0);
-            SPI_ENDWAIT_STATE
-        }
-    }
-    buffer_pos++;
+    break;
     SPI_ENDWAIT_STATE
 
-    if (checksum == data[len + 4])
+    if (!smtqueue.size()) // No slave queue
     {
-        if (data[0] == 0xDEAD)
-        {
-            /* ##################################################################### */
-            /* ########################### ACCESS SLAVE'S QUEUE #################### */
-            /* ##################################################################### */
-            if (data[3] == 0xF1A0)
-            {
-                if (!smtqueue.size())
-                {
-                    SPI_WAIT_STATE(void)
-                    SLAVE_RDR;
-                    SLAVE_TDR(0xAD00);
-                    SPI_ENDWAIT_STATE
-                }
-                else
-                {
-                    uint16_t buf[smtqueue.length_front()] = {0}, pos = 0, command = 0;
-                    smtqueue.peek_front(buf, sizeof(buf) >> 1);
-                    SPI_WAIT_STATE
-                    command = SLAVE_RDR;
-                    SLAVE_TDR(0xAD00 | smtqueue.size());
-                    if (command == 0xCEB6)
-                    {
-                        SPI_WAIT_STATE
-                        command = SLAVE_RDR;
-                        if (pos >= (sizeof(buf) >> 1))
-                            pos = 0;
-                        SLAVE_TDR(buf[pos]);
-                        pos++;
-                        if (command == 0xCE0A)
-                        {
-                            smtqueue.pop_front();
-                            SPI_WAIT_STATE
-                            command = SLAVE_RDR;
-                            SLAVE_TDR(0xD632);
-                            SPI_ENDWAIT_STATE
-                        }
-                        SPI_ENDWAIT_STATE
-                    }
-                    SPI_ENDWAIT_STATE
-                }
-            }
-        } /* end of 0xDEAD CMD */
+        SPI_WAIT_STATE(void)
+        SLAVE_RDR;
+        SLAVE_TDR(0x6900);
+        SPI_ENDWAIT_STATE
     }
+    else // Access Slave Queue
+    {
+        uint16_t buf[smtqueue.length_front()] = {0}, pos = 0, command = 0;
+        smtqueue.peek_front(buf, sizeof(buf) >> 1);
+        SPI_WAIT_STATE
+        command = SLAVE_RDR;
+        SLAVE_TDR(0x6900 | smtqueue.size());
+        if (command == 0xF00D)
+        {
+            SPI_WAIT_STATE
+            command = SLAVE_RDR;
+            if (pos >= (sizeof(buf) >> 1))
+                pos = 0;
+            SLAVE_TDR(buf[pos]);
+            pos++;
+            if (command == 0xCE0A) 
+            {
+                smtqueue.pop_front();
+                SPI_WAIT_STATE
+                command = SLAVE_RDR;
+                SLAVE_TDR(0xD632);
+                SPI_ENDWAIT_STATE
+            }
+            SPI_ENDWAIT_STATE
+        }
+        SPI_ENDWAIT_STATE
+
+    } /* end of 0xFEED CMD */
     SPI_ISR_EXIT
 }
 
-SPI_MSTransfer_T4_FUNC uint16_t SPI_MSTransfer_T4_OPT::transfer16(const uint16_t *buffer, const uint16_t length, const uint16_t packetID)
+SPI_MSTransfer_T4_FUNC uint16_t SPI_MSTransfer_T4_OPT::transfer16(const uint16_t *buffer, const uint16_t length, const uint16_t widgetID, const uint16_t packetID)
 {
     if (smtqueue.size() == smtqueue.capacity())
+    {
+        Serial.println("Queue is full, cannot transfer data.");
         return 0;
-    uint16_t data[7 + length], checksum = 0, data_pos = 0;
-    data[data_pos] = 0xAA55;
-    checksum ^= data[data_pos];
-    data_pos++; // HEADER
-    data[data_pos] = sizeof(data) >> 1;
-    checksum ^= data[data_pos];
-    data_pos++; // DATA SIZE
-    data[data_pos] = 0x0000;
-    checksum ^= data[data_pos];
-    data_pos++; // SUB SWITCH STATEMENT
-    data[data_pos] = length;
+    }
+    uint16_t data[5 + length], checksum = 0, data_pos = 0;
+
+    // Header
+    data[data_pos] = 0xDA7A;
     checksum ^= data[data_pos];
     data_pos++;
-    data[data_pos] = slave_ID;
+
+    // Packet Length
+    data[data_pos] = length + 5;
     checksum ^= data[data_pos];
     data_pos++;
+
+    // Widget ID
+    data[data_pos] = widgetID;
+    checksum ^= data[data_pos];
+    data_pos++;
+
+    // Packet ID (make it time based maybe? to discard old packets)
     data[data_pos] = packetID;
     checksum ^= data[data_pos];
     data_pos++;
+
+    // Actual Data
     for (uint16_t i = 0; i < length; i++)
     {
         data[data_pos] = buffer[i];
@@ -209,21 +170,7 @@ SPI_MSTransfer_T4_FUNC uint16_t SPI_MSTransfer_T4_OPT::transfer16(const uint16_t
         data_pos++;
     }
     data[data_pos] = checksum;
-    smtqueue.push_back(data, data[1]);
-    return packetID;
-}
 
-SPI_MSTransfer_T4_FUNC uint32_t SPI_MSTransfer_T4_OPT::events() const
-{
-    if (mstqueue.size())
-    {
-        uint16_t data[mstqueue.length_front()];
-        mstqueue.pop_front(data, (sizeof(data) >> 1));
-        AsyncMST info;
-        info.packetID = data[4];
-        if (_slave_handler != nullptr)
-            _slave_handler(data + 5, (sizeof(data) >> 1) - 6, info);
-        return 1;
-    }
-    return 0;
+    smtqueue.push_back(data, length + 5);
+    return packetID;
 }
