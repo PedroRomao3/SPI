@@ -19,17 +19,18 @@ void setup()
     Serial.begin(115200);
     Serial.print("!!!!! init !!!!!\n");
     mySPI.begin();
-    mySPI.onTransfer(myCB);
+    // mySPI.onTransfer(myCB);
 }
 
 void loop()
 {
-    mySPI.events();
+    // mySPI.events();
     static uint32_t t = millis();
     if (millis() - t > 100)
     {
         Serial.print("millis: ");
         Serial.println(millis());
+        mySPI.transfer16((const uint16_t[]){0xB00B, 0xF00D, 0xDEED}, 3, millis() & 0xFFFF);
         t = millis();
     }
 }

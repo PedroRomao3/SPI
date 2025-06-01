@@ -145,26 +145,46 @@ SPI_MSTransfer_MASTER_FUNC void SPI_MSTransfer_MASTER_OPT::detectSlaves() {
 
 
 SPI_MSTransfer_MASTER_FUNC uint32_t SPI_MSTransfer_MASTER_OPT::events() {
+  uint16_t r;
   uint16_t queues = 0;
   spi_assert();
-  spi_transfer16(0xDEAD);
-  spi_transfer16(slave_ID);
-  spi_transfer16(1);
-  spi_transfer16(0xF1A0);
-  spi_transfer16(0xF1A0);
-  spi_transfer16(0xF1A0); /* can't checksum one word, so resend as checksum */
+  Serial.print("\nSTART: ");
+  r = spi_transfer16(0xDEAD); // header
+  Serial.printf("  %04X ", r);
+  r = spi_transfer16(slave_ID); // slave id
+  Serial.printf("  %04X ", r);
+  r = spi_transfer16(1); // length
+  Serial.printf("  %04X ", r);
+  r = spi_transfer16(0xF1A0); // access queue
+  Serial.printf("  %04X ", r);
+  r = spi_transfer16(0xF1A0); // random data
+  Serial.printf("  %04X ", r);
+  r = spi_transfer16(0xF1A0); // checksum (of random data, so the same)
+  Serial.printf("  %04X ", r);
+  Serial.println();
+  Serial.print("QUEUE: ");
   for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
     result = spi_transfer16(0xFFFF);
-    if ( !queues && (result & 0xFF00) == 0xAD00 ) queues = (uint8_t)result;
+    Serial.printf("  %04X ", result);
+    if ( !queues && (result & 0xFF00) == 0xAD00 ) {
+      queues = (uint8_t)result;
+      break;
+    }
   }
   if ( queues ) {
     for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
+      Serial.println();
       if ( result == 0xD632 ) break; /* we also break this loop after a dequeue */
+      Serial.print("POLLING DATA: ");
       result = spi_transfer16(0xCEB6);
+      Serial.printf("  %04X ", result);
       if ( result == 0xAA55 ) {
         uint16_t buf[SPI_MST_DATA_BUFFER_MAX] = { 0xAA55, 10 }, pos = 1, checksum = 0xAA55;
+        Serial.println();
+        Serial.print("DATA: ");
         for ( uint16_t i = 0; i < buf[1]; i++ ) {
           buf[pos] = spi_transfer16(0xCEB6);
+          Serial.printf("  %04X ", buf[pos]);
           if ( pos < buf[1] - 1 ) checksum ^= buf[pos];
           pos++;
           if ( pos >= buf[1] ) {
@@ -173,6 +193,7 @@ SPI_MSTransfer_MASTER_FUNC uint32_t SPI_MSTransfer_MASTER_OPT::events() {
               if ( _master_handler != nullptr ) _master_handler(buf + 6, buf[1] - 7, info);
               for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
                 result = spi_transfer16(0xCE0A);
+                Serial.printf("  %04X ", result);
                 if ( result == 0xD632 ) {
                   queues--;
                   break;

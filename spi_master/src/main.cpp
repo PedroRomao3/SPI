@@ -17,10 +17,11 @@ void loop() {
   if ( millis() - t > 100 ) {
     Serial.println(millis());
 
-    uint16_t buf2[1] = { 0xBEEF};
-    mySPI1234.transfer16(buf2, 1, 0x1000);
+    // uint16_t buf2[1] = { 0xBEEF};
+    // mySPI1234.transfer16(buf2, 1, 0x1000);
+    mySPI1234.events();
 
-    mySPI1234.pinMode(5, INPUT);
+    // mySPI1234.pinMode(5, INPUT);
     t = millis();
   }
 
