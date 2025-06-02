@@ -33,8 +33,8 @@
     return;
 #endif
 
-#define SPI_MST_QUEUE_SLOTS 8
-#define SPI_MST_DATA_BUFFER_MAX 200
+#define SPI_MST_QUEUE_SLOTS 20
+#define SPI_MST_DATA_BUFFER_MAX 10
 
 struct AsyncMST {
   uint16_t packetID = 0;
@@ -69,7 +69,7 @@ SPI_MSTransfer_T4_CLASS class SPI_MSTransfer_T4 : public SPI_MSTransfer_T4_Base 
   public:
     SPI_MSTransfer_T4();
     void begin() const;
-    uint16_t transfer16(const uint16_t *buffer, const uint16_t length, uint16_t widgetID, uint16_t packetID);
+    uint16_t transfer16(const uint16_t *buffer, uint16_t length, uint16_t widgetID, uint16_t packetID);
 
   private:
     volatile uint32_t *spiAddr;

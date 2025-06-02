@@ -4,7 +4,7 @@
 SPI_MSTransfer_MASTER<&SPI, 10, 0x1234> mySPI1234;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   SPI.begin();
   pinMode(10, OUTPUT);
   digitalWrite(10, 1);
@@ -14,7 +14,7 @@ void setup() {
 void loop() {
 
   static uint32_t t = millis();
-  if ( millis() - t > 50 ) {
+  if ( millis() - t > 1000 ) {
     Serial.println(millis());
 
     mySPI1234.poll_slave();

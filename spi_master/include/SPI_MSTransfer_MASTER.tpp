@@ -36,6 +36,7 @@ SPI_MSTransfer_MASTER_FUNC uint16_t SPI_MSTransfer_MASTER_OPT::spi_transfer16(ui
 SPI_MSTransfer_MASTER_FUNC uint32_t SPI_MSTransfer_MASTER_OPT::poll_slave() {
   uint16_t r;
   uint16_t queues = 0;
+  static int successCount = 0;
   spi_assert();
   Serial.print("\nSTART: ");
   r = spi_transfer16(0xFEED); // Send feed command
@@ -78,20 +79,26 @@ SPI_MSTransfer_MASTER_FUNC uint32_t SPI_MSTransfer_MASTER_OPT::poll_slave() {
         Serial.printf("  %04X ", buf[pos]);
         pos++;
 
-        for ( uint16_t i = 0; i < buf[1]; i++ ) {
+        for ( uint16_t j = 0; j < buf[1]; j++ ) {
           buf[pos] = spi_transfer16(0xF00D);
           Serial.printf("  %04X ", buf[pos]);
           if ( pos < buf[1] - 1 ) checksum ^= buf[pos];
           pos++;
           if ( pos >= buf[1] ) {
+            Serial.println();
+            Serial.print("CHECKSUM: ");
             if ( checksum == buf[buf[1]-1] ) {
               AsyncMST info; info.widgetID = buf[2]; info.packetID = buf[3];
               // if ( _master_handler != nullptr ) _master_handler(buf + 6, buf[1] - 7, info);
-              for ( uint16_t i = 0, result = 0; i < 10; i++ ) {
-                result = spi_transfer16(0xCE0A);
-                Serial.printf("  %04X ", result);
-                if ( result == 0xD632 ) {
+              Serial.println();
+              Serial.print("END: ");
+              for ( uint16_t k = 0, data = 0; k < 10; k++ ) {
+                data = spi_transfer16(0xCE0A);
+                Serial.printf("  %04X ", data);
+                if ( data == 0xD632 ) {
                   queues--;
+                  Serial.printf("%d ", successCount++);
+                  Serial.println();
                   break;
                 }
               }

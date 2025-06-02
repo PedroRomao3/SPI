@@ -117,7 +117,7 @@ SPI_MSTransfer_T4_FUNC void SPI_MSTransfer_T4_OPT::SPI_MSTransfer_SLAVE_ISR()
                 pos = 0;
             SLAVE_TDR(buf[pos]);
             pos++;
-            if (command == 0xCE0A) 
+            if (command == 0xCE0A)
             {
                 smtqueue.pop_front();
                 SPI_WAIT_STATE

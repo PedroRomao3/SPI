@@ -3,7 +3,7 @@ SPI_MSTransfer_T4<&SPI> mySPI;
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(9600);
     Serial.print("!!!!! init !!!!!\n");
     mySPI.begin();
 }
@@ -11,7 +11,7 @@ void setup()
 void loop()
 {
     static uint32_t t = millis();
-    if (millis() - t > 50)
+    if (millis() - t > 1000)
     {
         Serial.print("millis: ");
         Serial.println(millis());
