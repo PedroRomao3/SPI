@@ -56,7 +56,7 @@ SPI_MSTransfer_T4_FUNC void SPI_MSTransfer_T4_OPT::begin() const
     SLAVE_CR = LPSPI_CR_RST; /* Reset Module */
     SLAVE_CR = 0;            /* Disable Module */
     SLAVE_FCR = 0;
-    SLAVE_IER = 0x1; /* RX Interrupt */ // todo yves: this is weird bcs bit 0 zero corresponds to TDIE (Transmit Data Interrupt Enable)
+    SLAVE_IER = 0x1; /* RX Interrupt */ 
     SLAVE_CFGR0 = 0;
     SLAVE_CFGR1 = (LPSPI_CFGR1_OUTCFG & 0xFCFFFFFF) | (3UL << 24);
 
