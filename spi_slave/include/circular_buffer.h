@@ -229,8 +229,8 @@ bool Circular_Buffer<T, _size, multi>::replace(T *buffer, uint16_t length, int p
   for ( uint16_t j = 0; j < _available; j++ ) {
     switch ( input_count ) {
       case 3: {
-          if ( _cabuf[ ((head+j)&(_size-1)) ][pos1+2] == buffer[pos1] && _cabuf[ ((head+j)&(_size-1)) ][pos2+2] == buffer[pos2] &&
-               _cabuf[ ((head+j)&(_size-1)) ][pos3+2] == buffer[pos3] ) {
+          if ( _cabuf[ ((head+j)&(_size-1)) ][pos1+2] == buffer[pos1] /*&& _cabuf[ ((head+j)&(_size-1)) ][pos2+2] == buffer[pos2] &&
+               _cabuf[ ((head+j)&(_size-1)) ][pos3+2] == buffer[pos3] */) {
             found = 1; 
             break;
           }

@@ -34,7 +34,7 @@
 #endif
 
 #define SPI_MST_QUEUE_SLOTS 20
-#define SPI_MST_DATA_BUFFER_MAX 10
+#define SPI_MST_DATA_BUFFER_MAX 20
 
 struct AsyncMST {
   uint16_t packetID = 0;

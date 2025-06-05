@@ -14,7 +14,7 @@ void setup() {
 void loop() {
 
   static uint32_t t = millis();
-  if ( millis() - t > 1000 ) {
+  if ( millis() - t > 1 ) {
     Serial.println(millis());
 
     mySPI1234.poll_slave();
