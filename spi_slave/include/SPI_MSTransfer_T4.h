@@ -7,7 +7,7 @@
 
 #if defined(__IMXRT1062__)
 // 48.5.1.1 LPSPI memory map
-#define SLAVE_CR spiAddr[4]
+#define SLAVE_CR spiAddr[4] // multiply index by 4 for address in data sheet (convert to HEX)
 #define SLAVE_FCR spiAddr[22]
 #define SLAVE_FSR spiAddr[23]
 #define SLAVE_IER spiAddr[6]
